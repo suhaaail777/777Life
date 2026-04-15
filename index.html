@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>777Life — Personal Life Planner</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<meta name="theme-color" content="#16a34a">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      colors: {
+        brand: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d' },
+        accent: { 400:'#fbbf24',500:'#f59e0b',600:'#d97706' },
+        dark: { 50:'#1a1a1a',100:'#262626',200:'#404040',300:'#525252',400:'#737373',500:'#a3a3a3',600:'#d4d4d4',700:'#e5e5e5',800:'#f5f5f5',900:'#fafafa' },
+        surface: { 50:'#171717',100:'#262626',200:'#404040',300:'#525252',400:'#737373',500:'#a3a3a3',600:'#d4d4d4',700:'#e5e5e5',800:'#f5f5f5',900:'#fafafa' }
+      }
+    }
+  }
+}
+</script>
+<style>
+  :root {
+    --panel-bg: rgba(38, 38, 38, 0.88);
+    --panel-border: rgba(115, 115, 115, 0.2);
+    --panel-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  * { scrollbar-width: thin; scrollbar-color: #404040 transparent; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #404040; border-radius: 3px; }
+  .fade-in { animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100%{ box-shadow:0 0 5px rgba(34,197,94,.3); } 50%{ box-shadow:0 0 20px rgba(34,197,94,.6); } }
+  .habit-ring { transition: stroke-dashoffset .6s ease; }
+  input[type="checkbox"] { accent-color: #22c55e; }
+  .page { display:none; } .page.active { display:block; }
+  .nav-item.active { background: linear-gradient(135deg, rgba(34,197,94,.15), rgba(22,163,74,.15)); color: #22c55e; border-right: 3px solid #22c55e; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+  .card-hover { transition: all .2s ease; }
+  .streak-fire { text-shadow: 0 0 8px rgba(251,191,36,.6); animation: firePulse 1.5s ease-in-out infinite; }
+  @keyframes firePulse { 0%,100%{ transform: scale(1); text-shadow: 0 0 8px rgba(251,191,36,.6); } 50%{ transform: scale(1.1); text-shadow: 0 0 16px rgba(251,191,36,.9); } }
+  .sidebar-overlay { display: none; }
+  .sidebar-overlay.active { display: block; }
+
+  /* Professional main-app shell */
+  #mainApp {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(34, 197, 94, 0.06) 0%, transparent 45%),
+      #171717;
+  }
+  #mainApp aside {
+    background: rgba(26, 26, 26, 0.94);
+    backdrop-filter: blur(10px);
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.35);
+  }
+  #mainApp main {
+    max-width: 1500px;
+  }
+
+  /* Navigation refinement */
+  .nav-item {
+    margin: 0.15rem 0.5rem;
+    border-radius: 0.85rem;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover {
+    border-color: rgba(115, 115, 115, 0.22);
+    color: #e5e5e5;
+  }
+  .nav-item.active {
+    border-right: 0;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.1);
+  }
+
+  /* Card system */
+  #mainApp .bg-dark-100 {
+    background: var(--panel-bg);
+    border-color: var(--panel-border);
+    box-shadow: var(--panel-shadow);
+  }
+  #mainApp .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 38px rgba(0, 0, 0, 0.44);
+  }
+  .stat-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.85), rgba(74, 222, 128, 0.35));
+  }
+
+  /* Buttons */
+  #mainApp .bg-brand-600 {
+    box-shadow: 0 8px 22px rgba(34, 197, 94, 0.22);
+  }
+  #mainApp .bg-dark-300 {
+    border: 1px solid rgba(115, 115, 115, 0.26);
+  }
+  #mainApp button,
+  #mainApp .task-filter {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* Inputs and controls */
+  input[type="text"], input[type="date"], textarea, select {
+    transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+  #mainApp input[type="text"],
+  #mainApp input[type="date"],
+  #mainApp textarea,
+  #mainApp select {
+    border-color: rgba(115, 115, 115, 0.28);
+    background: rgba(38, 38, 38, 0.92);
+  }
+  #mainApp input[type="text"]:focus,
+  #mainApp input[type="date"]:focus,
+  #mainApp textarea:focus,
+  #mainApp select:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  }
+
+  /* Section titles */
+  #mainApp h1 {
+    letter-spacing: -0.02em;
+  }
+  
+  /* Progress bar animation */
+  .progress-fill { transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+  
+  /* Checkmark animation */
+  .checkmark-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke-miterlimit: 10; stroke: #22c55e; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+  .checkmark-check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards; }
+  @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+  
+  /* Completion burst effect */
+  .success-burst-container {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    width: 0;
+    height: 0;
+  }
+  .success-ring {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 2px solid rgba(34, 197, 94, 0.7);
+    transform: translate(-50%, -50%);
+    animation: successRingExpand 700ms ease-out forwards;
+  }
+  .success-spark {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    animation: successSparkFly 900ms ease-out forwards;
+  }
+  @keyframes successRingExpand {
+    0% { opacity: 0.9; width: 16px; height: 16px; }
+    70% { opacity: 0.5; width: 110px; height: 110px; }
+    100% { opacity: 0; width: 145px; height: 145px; }
+  }
+  @keyframes successSparkFly {
+    0% { opacity: 1; transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0.4); }
+  }
+  
+  /* Button press effect */
+  .btn-press:active { transform: scale(0.95); }
+  
+  /* Habit completion celebration */
+  .habit-complete { animation: celebrate 0.6s ease-out; }
+  @keyframes celebrate { 
+    0% { transform: scale(1); } 
+    50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(34,197,94,0.5); } 
+    100% { transform: scale(1); } 
+  }
+  
+  /* Stat card hover animation */
+  .stat-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .stat-card:hover { transform: translateY(-4px) scale(1.02); }
+  
+  /* Slide in animation */
+  .slide-in-left { animation: slideInLeft 0.4s ease-out; }
+  @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  
+  .slide-in-right { animation: slideInRight 0.4s ease-out; }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  
+  /* Bounce animation for buttons */
+  .bounce { animation: bounce 0.5s ease; }
+  @keyframes bounce { 
+    0%, 100% { transform: translateY(0); } 
+    50% { transform: translateY(-5px); } 
+  }
+  
+  /* Scale animation for quick actions */
+  .scale-up { animation: scaleUp 0.3s ease; }
+  @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* One-time onboarding habit highlight on dashboard */
+  .onboarding-habit-highlight {
+    border: 1px solid rgba(34, 197, 94, 0.55);
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+    animation: onboardingHabitPop 0.7s ease both;
+  }
+  @keyframes onboardingHabitPop {
+    0% { transform: translateY(10px) scale(0.96); opacity: 0; box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+    60% { transform: translateY(-2px) scale(1.02); opacity: 1; box-shadow: 0 0 22px rgba(34, 197, 94, 0.28); }
+    100% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+  }
+  
+  /* Typing animation for AI */
+  .typing-indicator span { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; margin: 0 2px; }
+  .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+  
+  /* Gradient animation */
+  .gradient-animate { background-size: 200% 200%; animation: gradientMove 3s ease infinite; }
+  @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+  
+  @media (max-width: 768px) {
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 30; }
+    .sidebar-overlay.active { display: block; }
+    aside { transform: translateX(-100%); transition: transform 0.3s ease; }
+    aside.mobile-open { transform: translateX(0); }
+    main { margin-left: 0 !important; }
+  }
+</style>
+</head>
+<body class="bg-dark-50 font-sans text-dark-700 min-h-screen">
+
+<!-- ====== ONBOARDING ====== -->
+<div id="onboarding" class="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-brand-900 p-4">
+  <div class="min-h-screen max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 py-8">
+    <!-- Left Side - Hero -->
+    <div class="flex-1 text-center lg:text-left">
+      <div class="flex items-center justify-center lg:justify-start gap-3 mb-6">
+        <div class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
+          <i data-lucide="dumbbell" class="w-6 h-6 text-white"></i>
+        </div>
+        <span class="font-bold text-2xl text-white tracking-tight">777Life</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
+        Forge Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">Best Self</span>
+      </h1>
+      <p class="text-lg md:text-xl text-dark-400 mb-8 max-w-lg mx-auto lg:mx-0">
+        The ultimate fitness & productivity companion. Track habits, crush goals, and build the life you deserve.
+      </p>
+      <div class="flex items-center justify-center lg:justify-start gap-6 text-sm text-dark-500">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <span>Habit Tracking</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <span>Goal Planning</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <span>Focus Timer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side - Onboarding Card -->
+    <div class="w-full max-w-md">
+      <div class="bg-dark-100/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-dark-200 p-6 md:p-8 fade-in">
+        <!-- Progress Indicator -->
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex gap-2">
+            <div class="step-indicator w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white text-sm font-bold" data-step="1">1</div>
+            <div class="w-8 h-0.5 bg-dark-300 self-center"></div>
+            <div class="step-indicator w-8 h-8 rounded-full bg-dark-300 flex items-center justify-center text-dark-500 text-sm font-bold" data-step="2">2</div>
+            <div class="w-8 h-0.5 bg-dark-300 self-center"></div>
+            <div class="step-indicator w-8 h-8 rounded-full bg-dark-300 flex items-center justify-center text-dark-500 text-sm font-bold" data-step="3">3</div>
+          </div>
+        </div>
+
+        <div id="onboard-step-1" class="onboard-step">
+          <h2 class="text-2xl font-bold text-white mb-2">Let's Get Started</h2>
+          <p class="text-dark-500 text-sm mb-6">Tell us a bit about yourself</p>
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-semibold text-white mb-2">Your Name</label>
+              <div class="relative">
+                <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500"></i>
+                <input type="text" id="userName" class="w-full pl-12 pr-4 py-4 bg-dark-200 border border-dark-300 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-white placeholder-dark-500 transition" placeholder="Enter your name">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-white mb-2">Primary Goal</label>
+              <div class="relative">
+                <i data-lucide="target" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500"></i>
+                <select id="mainGoal" class="w-full pl-12 pr-4 py-4 bg-dark-200 border border-dark-300 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-white appearance-none cursor-pointer transition">
+                  <option value="fitness">💪 Build Muscle / Gain Weight</option>
+                  <option value="weightloss">🔥 Lose Weight / Get Fit</option>
+                  <option value="study">📚 Academic Excellence</option>
+                  <option value="career">🚀 Career Growth</option>
+                  <option value="mindfulness">🧘 Mental Wellness</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500 pointer-events-none"></i>
+              </div>
+            </div>
+            <button onclick="nextOnboardStep(2)" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold py-4 rounded-2xl transition transform hover:scale-[1.02] shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+              Continue
+              <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="onboard-step-2" class="onboard-step hidden">
+          <h2 class="text-2xl font-bold text-white mb-2">Build Your Routine</h2>
+          <p class="text-dark-500 text-sm mb-6">Select habits to track daily</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-72 overflow-y-auto pr-1">
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="gym" checked>
+              <span class="text-lg">🏋️</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Gym</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="study" checked>
+              <span class="text-lg">📚</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Study</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="sleep" checked>
+              <span class="text-lg">😴</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Sleep</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="water">
+              <span class="text-lg">💧</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Water</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="meditation">
+              <span class="text-lg">🧘</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Meditate</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="reading">
+              <span class="text-lg">📖</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Reading</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="walk" checked>
+              <span class="text-lg">🚶</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Walk</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="stretching">
+              <span class="text-lg">🤸</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Stretching</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="journaling">
+              <span class="text-lg">📝</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Journaling</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="coding">
+              <span class="text-lg">💻</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Coding</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="planning">
+              <span class="text-lg">📅</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Planning</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="no_sugar">
+              <span class="text-lg">🍭</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">No Sugar</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="early_wake">
+              <span class="text-lg">⏰</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Wake Early</span>
+            </label>
+            <label class="habit-option flex items-center gap-3 p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl cursor-pointer hover:border-brand-500 hover:bg-dark-300 transition group">
+              <input type="checkbox" class="habit-pref w-5 h-5 accent-brand-500" value="screen_limit">
+              <span class="text-lg">📱</span>
+              <span class="text-sm font-medium text-white group-hover:text-brand-400 transition">Screen Limit</span>
+            </label>
+          </div>
+          <div class="flex gap-3 pt-1">
+            <button onclick="prevOnboardStep(1)" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white font-semibold py-4 rounded-2xl transition">Back</button>
+            <button onclick="nextOnboardStep(3)" class="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold py-4 rounded-2xl transition transform hover:scale-[1.02] shadow-lg shadow-brand-500/25">Continue</button>
+          </div>
+        </div>
+
+        <div id="onboard-step-3" class="onboard-step hidden">
+          <h2 class="text-2xl font-bold text-white mb-2">Focus Sessions</h2>
+          <p class="text-dark-500 text-sm mb-6">Choose your default focus duration</p>
+          <div class="grid grid-cols-3 gap-3 mb-6">
+            <button onclick="setFocusTime(25)" class="focus-opt p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl hover:border-brand-500 hover:bg-dark-300 transition group" data-time="25">
+              <div class="text-3xl font-bold text-brand-500 group-hover:scale-110 transition">25</div>
+              <div class="text-xs text-dark-400 mt-1">Pomodoro</div>
+            </button>
+            <button onclick="setFocusTime(45)" class="focus-opt p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl hover:border-brand-500 hover:bg-dark-300 transition group" data-time="45">
+              <div class="text-3xl font-bold text-brand-500 group-hover:scale-110 transition">45</div>
+              <div class="text-xs text-dark-400 mt-1">Deep</div>
+            </button>
+            <button onclick="setFocusTime(60)" class="focus-opt p-4 bg-dark-200 border-2 border-dark-300 rounded-2xl hover:border-brand-500 hover:bg-dark-300 transition group" data-time="60">
+              <div class="text-3xl font-bold text-brand-500 group-hover:scale-110 transition">60</div>
+              <div class="text-xs text-dark-400 mt-1">Extended</div>
+            </button>
+          </div>
+          <input type="hidden" id="focusTime" value="25">
+          <div class="flex gap-3">
+            <button onclick="prevOnboardStep(2)" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white font-semibold py-4 rounded-2xl transition">Back</button>
+            <button onclick="completeOnboarding()" class="flex-1 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold py-4 rounded-2xl transition transform hover:scale-[1.02] shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+              Start Journey
+              <i data-lucide="rocket" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div id="mainApp" class="hidden">
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+  
+  <!-- Mobile Header -->
+  <header class="md:hidden fixed top-0 left-0 right-0 bg-dark-100 border-b border-dark-200 z-30 px-4 py-3 flex items-center justify-between">
+    <button onclick="toggleMobileSidebar()" class="p-2 text-white hover:bg-dark-200 rounded-lg">
+      <i data-lucide="menu" class="w-6 h-6"></i>
+    </button>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+        <i data-lucide="dumbbell" class="w-4 h-4 text-white"></i>
+      </div>
+      <span class="font-bold text-white">777Life</span>
+    </div>
+    <div class="w-8"></div>
+  </header>
+  
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-dark-100 border-r border-dark-200 z-40 flex flex-col md:transform-none transform -translate-x-full transition-transform duration-300">
+    <div class="p-5 border-b border-dark-200">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center">
+          <i data-lucide="dumbbell" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="font-bold text-xl text-white">777Life</span>
+      </div>
+    </div>
+    <nav class="flex-1 py-4">
+      <div class="px-3 mb-2 text-xs font-semibold text-dark-500 uppercase tracking-wider">Main</div>
+      <a href="javascript:void(0)" onclick="showPage('dashboard')" class="nav-item active flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="dashboard">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('habits')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="habits">
+        <i data-lucide="flame" class="w-5 h-5"></i>
+        <span>Habit Tracker</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('goals')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="goals">
+        <i data-lucide="target" class="w-5 h-5"></i>
+        <span>Goals</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('tasks')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="tasks">
+        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        <span>Daily Tasks</span>
+      </a>
+      <div class="px-3 mt-6 mb-2 text-xs font-semibold text-dark-500 uppercase tracking-wider">Growth</div>
+      <a href="javascript:void(0)" onclick="showPage('ai')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="ai">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+        <span>AI Coach</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('skills')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="skills">
+        <i data-lucide="trending-up" class="w-5 h-5"></i>
+        <span>Skill Tracker</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('journal')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="journal">
+        <i data-lucide="book-open" class="w-5 h-5"></i>
+        <span>Journal</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('focus')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="focus">
+        <i data-lucide="timer" class="w-5 h-5"></i>
+        <span>Focus Timer</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showPage('settings')" class="nav-item flex items-center gap-3 px-4 py-3 text-dark-400 hover:bg-dark-200 transition" data-page="settings">
+        <i data-lucide="settings" class="w-5 h-5"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="p-4 border-t border-dark-200">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-brand-600 rounded-full flex items-center justify-center">
+          <span id="userInitial" class="font-bold text-white">U</span>
+        </div>
+        <div>
+          <div id="displayName" class="font-medium text-white">User</div>
+          <div class="text-xs text-dark-500">Free Plan</div>
+        </div>
+      </div>
+      <div class="mb-3 p-3 rounded-xl bg-dark-200 border border-dark-300">
+        <div class="text-xs text-dark-500 mb-2">Progress</div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-dark-400">Level</span>
+          <span id="levelBadge" class="text-sm font-bold text-brand-400">1</span>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-dark-400">XP</span>
+          <span id="xpValue" class="text-sm font-bold text-white">0</span>
+        </div>
+      </div>
+<button onclick="debugClearStorage()" class="w-full text-sm text-yellow-400 hover:text-yellow-300 transition mr-2">Debug Clear</button>
+<button onclick="resetApp()" class="w-full text-sm text-red-400 hover:text-red-300 transition">Reset All Data</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="ml-0 md:ml-64 min-h-screen pt-16 md:pt-0">
+    <!-- Dashboard Page -->
+    <div id="page-dashboard" class="page active p-4 md:p-8 fade-in">
+        <h1 class="text-2xl md:text-3xl font-bold text-white">Good <span id="greetingTime">Morning</span>, <span id="dashboardName">User</span>! 👋</h1>
+        <p class="text-dark-500 mt-1">Here's your progress summary</p>
+
+      <!-- Quote -->
+      <div class="bg-gradient-to-r from-brand-600 to-brand-700 rounded-2xl p-6 text-white mb-8 gradient-animate">
+        <div class="flex items-start gap-4">
+          <i data-lucide="quote" class="w-8 h-8 opacity-50"></i>
+          <div>
+            <p id="dailyQuote" class="text-lg font-medium italic">"The secret of getting ahead is getting started."</p>
+            <p id="quoteAuthor" class="text-sm opacity-80 mt-2">— Mark Twain</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-accent-500/20 rounded-xl flex items-center justify-center">
+              <i data-lucide="flame" class="w-6 h-6 text-accent-500"></i>
+            </div>
+            <span class="text-2xl font-bold text-white" id="statStreak">0</span>
+          </div>
+          <div class="text-sm text-dark-500">Day Streak</div>
+        </div>
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-brand-500/20 rounded-xl flex items-center justify-center">
+              <i data-lucide="check-circle-2" class="w-6 h-6 text-brand-500"></i>
+            </div>
+            <span class="text-2xl font-bold text-white" id="statHabits">0/0</span>
+          </div>
+          <div class="text-sm text-dark-500">Habits Today</div>
+        </div>
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <i data-lucide="list-todo" class="w-6 h-6 text-blue-500"></i>
+            </div>
+            <span class="text-2xl font-bold text-white" id="statTasks">0/0</span>
+          </div>
+          <div class="text-sm text-dark-500">Tasks Done</div>
+        </div>
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+              <i data-lucide="target" class="w-6 h-6 text-purple-500"></i>
+            </div>
+            <span class="text-2xl font-bold text-white" id="statGoals">0</span>
+          </div>
+          <div class="text-sm text-dark-500">Active Goals</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200">
+          <h3 class="font-semibold text-white mb-4">Weekly Analytics</h3>
+          <div id="weeklyChart" class="grid grid-cols-7 gap-2 items-end h-32"></div>
+          <p id="weeklyInsights" class="text-dark-500 text-sm mt-4"></p>
+        </div>
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200">
+          <h3 class="font-semibold text-white mb-4">Achievements</h3>
+          <div id="achievementList" class="space-y-2 text-sm text-dark-400"></div>
+        </div>
+      </div>
+
+      <!-- Today's Habits & Tasks -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200">
+          <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="flame" class="w-5 h-5 text-accent-500"></i>
+            Today's Habits
+          </h3>
+          <div id="dashboardHabits" class="space-y-3"></div>
+        </div>
+        <div class="bg-dark-100 rounded-xl p-6 border border-dark-200">
+          <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="list-todo" class="w-5 h-5 text-blue-500"></i>
+            Today's Tasks
+          </h3>
+          <div id="dashboardTasks" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habits Page -->
+    <div id="page-habits" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">Habit Tracker</h1>
+          <p class="text-dark-500 mt-1">Build consistency, one day at a time</p>
+        </div>
+        <button onclick="openHabitModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+          Add Habit
+        </button>
+      </div>
+      <div id="habitsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Goals Page -->
+    <div id="page-goals" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">Goal Planner</h1>
+          <p class="text-dark-500 mt-1">Dream big, plan smart, achieve more</p>
+        </div>
+        <button onclick="openGoalModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+          Add Goal
+        </button>
+      </div>
+      <div id="goalsList" class="space-y-4"></div>
+    </div>
+
+    <!-- Tasks Page -->
+    <div id="page-tasks" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">Daily Tasks</h1>
+          <p class="text-dark-500 mt-1">Stay organized and productive</p>
+        </div>
+        <button onclick="openTaskModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+          Add Task
+        </button>
+      </div>
+      <div class="bg-dark-100 rounded-xl border border-dark-200 overflow-hidden">
+        <div class="p-4 border-b border-dark-200 bg-dark-200">
+          <div class="flex gap-2 overflow-x-auto pb-1">
+            <button onclick="filterTasks('all')" class="task-filter px-4 py-2 rounded-lg text-sm font-medium bg-brand-600 text-white whitespace-nowrap" data-filter="all">All</button>
+            <button onclick="filterTasks('pending')" class="task-filter px-4 py-2 rounded-lg text-sm font-medium text-dark-400 hover:bg-dark-300 transition whitespace-nowrap" data-filter="pending">Pending</button>
+            <button onclick="filterTasks('completed')" class="task-filter px-4 py-2 rounded-lg text-sm font-medium text-dark-400 hover:bg-dark-300 transition whitespace-nowrap" data-filter="completed">Completed</button>
+          </div>
+        </div>
+        <div id="tasksList" class="divide-y divide-dark-200"></div>
+      </div>
+    </div>
+
+    <!-- AI Coach Page -->
+    <div id="page-ai" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">AI Coach</h1>
+          <p class="text-dark-500 mt-1">Personalized guidance for your <span id="aiGoalLabel" class="text-brand-500 font-semibold">journey</span></p>
+        </div>
+        <button onclick="clearChat()" class="bg-dark-300 hover:bg-dark-400 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+          Clear Chat
+        </button>
+      </div>
+      
+      <div class="bg-dark-100 rounded-2xl border border-dark-200 overflow-hidden flex flex-col h-[calc(100vh-16rem)]">
+        <!-- Chat Messages -->
+        <div id="aiChatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div class="flex gap-3">
+            <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="bg-dark-200 rounded-2xl rounded-tl-none p-4 max-w-[80%]">
+              <p class="text-white" id="aiWelcomeMessage">Welcome! I'm your personal AI coach, here to help you achieve your goals. How can I assist you today?</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="p-4 border-t border-dark-200 bg-dark-200">
+          <p class="text-xs text-dark-500 mb-3 font-medium">Quick Questions:</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="askAI('Give me a daily tip')" class="quick-action px-4 py-2 bg-dark-300 hover:bg-dark-400 text-white text-sm rounded-xl transition scale-up btn-press">💡 Daily Tip</button>
+            <button onclick="askAI('How can I stay motivated?')" class="quick-action px-4 py-2 bg-dark-300 hover:bg-dark-400 text-white text-sm rounded-xl transition scale-up btn-press">🔥 Motivation</button>
+            <button onclick="askAI('What should I focus on today?')" class="quick-action px-4 py-2 bg-dark-300 hover:bg-dark-400 text-white text-sm rounded-xl transition scale-up btn-press">🎯 Focus</button>
+            <button onclick="askAI('Give me a workout plan')" class="quick-action px-4 py-2 bg-dark-300 hover:bg-dark-400 text-white text-sm rounded-xl transition scale-up fitness-only btn-press">🏋️ Workout</button>
+            <button onclick="askAI('Nutrition advice')" class="quick-action px-4 py-2 bg-dark-300 hover:bg-dark-400 text-white text-sm rounded-xl transition scale-up fitness-only btn-press">🥗 Nutrition</button>
+          </div>
+        </div>
+        
+        <!-- Input -->
+        <div class="p-4 border-t border-dark-200 bg-dark-100">
+          <div class="flex gap-3">
+            <input type="text" id="aiInput" class="flex-1 px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none text-white placeholder-dark-500" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl transition flex items-center gap-2 btn-press">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills Page -->
+    <div id="page-skills" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">Skill Tracker</h1>
+          <p class="text-dark-500 mt-1">Track your learning journey</p>
+        </div>
+        <button onclick="openSkillModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+          Add Skill
+        </button>
+      </div>
+      <div id="skillsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Journal Page -->
+    <div id="page-journal" class="page p-4 md:p-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-white">Personal Journal</h1>
+          <p class="text-dark-500 mt-1">Reflect, remember, grow</p>
+        </div>
+        <button onclick="openJournalModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition btn-press">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+          New Entry
+        </button>
+      </div>
+      <div id="journalList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Focus Timer Page -->
+    <div id="page-focus" class="page p-4 md:p-8 fade-in">
+      <div class="max-w-2xl mx-auto text-center">
+        <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">Focus Timer</h1>
+        <p class="text-dark-500 mb-6 md:mb-8">Stay focused, achieve more</p>
+        <div class="bg-dark-100 rounded-2xl border border-dark-200 p-6 md:p-12 mb-8">
+          <div class="w-48 h-48 md:w-64 md:h-64 mx-auto relative mb-6 md:mb-8">
+            <svg class="w-full h-full transform -rotate-90">
+              <circle cx="96" cy="96" r="88" stroke="#404040" stroke-width="12" fill="none"></circle>
+              <circle id="timerRing" class="habit-ring" cx="96" cy="96" r="88" stroke="#22c55e" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="553" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="timerDisplay" class="text-4xl md:text-5xl font-bold text-white">25:00</span>
+              <span id="timerLabel" class="text-dark-500 mt-2">Focus</span>
+            </div>
+          </div>
+          <div class="flex justify-center gap-3 md:gap-4">
+            <button onclick="toggleTimer()" id="timerBtn" class="bg-brand-600 hover:bg-brand-700 text-white px-6 md:px-8 py-3 rounded-xl font-semibold transition text-sm md:text-base btn-press">Start</button>
+            <button onclick="resetTimer()" class="bg-dark-300 hover:bg-dark-400 text-white px-6 md:px-8 py-3 rounded-xl font-semibold transition text-sm md:text-base btn-press">Reset</button>
+          </div>
+        </div>
+        <div class="bg-dark-100 rounded-xl border border-dark-200 p-6">
+          <h3 class="font-semibold text-white mb-4">Today's Sessions</h3>
+          <div class="text-3xl md:text-4xl font-bold text-brand-500" id="focusSessions">0</div>
+          <p class="text-dark-500 text-sm mt-1">Focus sessions completed</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="page-settings" class="page p-4 md:p-8 fade-in">
+      <div class="mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-white">Settings</h1>
+        <p class="text-dark-500 mt-1">Manage reminders, backups, search, and testing checks</p>
+      </div>
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="bg-dark-100 rounded-xl border border-dark-200 p-6 space-y-4">
+          <h3 class="font-semibold text-white">Global Search</h3>
+          <input id="globalSearch" type="text" placeholder="Search all data..." oninput="setGlobalSearch(this.value)" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl text-white placeholder-dark-500">
+          <p class="text-xs text-dark-500">Search applies to habits, goals, tasks, skills, and journal.</p>
+        </div>
+        <div class="bg-dark-100 rounded-xl border border-dark-200 p-6 space-y-4">
+          <h3 class="font-semibold text-white">Reminders</h3>
+          <label class="flex items-center justify-between text-sm text-dark-400">
+            Enable daily reminder
+            <input id="reminderEnabled" type="checkbox" class="w-4 h-4">
+          </label>
+          <input id="reminderTime" type="time" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl text-white">
+          <button onclick="saveReminderSettings()" class="w-full bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Save Reminder Settings</button>
+        </div>
+        <div class="bg-dark-100 rounded-xl border border-dark-200 p-6 space-y-4">
+          <h3 class="font-semibold text-white">Backup</h3>
+          <button onclick="exportData()" class="w-full bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Export Data</button>
+          <button onclick="document.getElementById('importDataInput').click()" class="w-full bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Import Data</button>
+          <input id="importDataInput" type="file" accept="application/json" class="hidden" onchange="importData(event)">
+        </div>
+      </div>
+      <div class="mt-6 bg-dark-100 rounded-xl border border-dark-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-white">Testing Checklist</h3>
+          <div class="flex gap-2">
+            <button onclick="markAllTestingDone()" class="text-xs bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-lg transition">Mark All Done</button>
+            <button onclick="resetTestingChecklist()" class="text-xs bg-dark-300 hover:bg-dark-400 text-white px-3 py-2 rounded-lg transition">Reset</button>
+          </div>
+        </div>
+        <div id="testingChecklist" class="space-y-2"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ====== MODALS ====== -->
+<!-- Habit Modal -->
+<div id="habitModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
+    <h2 class="text-xl font-bold text-white mb-4">Add New Habit</h2>
+    <div class="space-y-4">
+      <input type="text" id="habitName" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Habit name">
+      <input type="text" id="habitIcon" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Icon (emoji)" value="✨">
+      <select id="habitColor" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+        <option value="orange">Orange</option>
+        <option value="green">Green</option>
+        <option value="blue">Blue</option>
+        <option value="purple">Purple</option>
+        <option value="pink">Pink</option>
+      </select>
+      <div class="flex gap-3">
+        <button onclick="closeHabitModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
+        <button onclick="addHabit()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Goal Modal -->
+<div id="goalModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
+    <h2 class="text-xl font-bold text-white mb-4">Add New Goal</h2>
+    <div class="space-y-4">
+      <input type="text" id="goalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Goal title">
+      <textarea id="goalDesc" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-24 resize-none text-white placeholder-dark-500" placeholder="Description"></textarea>
+      <input type="date" id="goalDeadline" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+      <div class="flex gap-3">
+        <button onclick="closeGoalModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
+        <button onclick="addGoal()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
+    <h2 class="text-xl font-bold text-white mb-4">Add New Task</h2>
+    <div class="space-y-4">
+      <input type="text" id="taskTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Task title">
+      <select id="taskPriority" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+        <option value="low">Low Priority</option>
+        <option value="medium">Medium Priority</option>
+        <option value="high">High Priority</option>
+      </select>
+      <select id="taskRecurrence" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+        <option value="none">No Repeat</option>
+        <option value="daily">Repeat Daily</option>
+        <option value="weekly">Repeat Weekly</option>
+      </select>
+      <div class="flex gap-3">
+        <button onclick="closeTaskModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
+        <button onclick="addTask()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Skill Modal -->
+<div id="skillModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
+    <h2 class="text-xl font-bold text-white mb-4">Add New Skill</h2>
+    <div class="space-y-4">
+      <input type="text" id="skillName" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Skill name">
+      <input type="range" id="skillLevel" min="0" max="100" value="0" class="w-full" oninput="document.getElementById('skillLevelVal').textContent = this.value + '%'">
+      <div class="text-center text-sm text-dark-500">Current Level: <span id="skillLevelVal">0%</span></div>
+      <div class="flex gap-3">
+        <button onclick="closeSkillModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
+        <button onclick="addSkill()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Journal Modal -->
+<div id="journalModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-dark-100 rounded-2xl max-w-lg w-full p-6 fade-in border border-dark-200">
+    <h2 class="text-xl font-bold text-white mb-4">New Journal Entry</h2>
+    <div class="space-y-4">
+      <input type="text" id="journalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Entry title">
+      <textarea id="journalContent" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-48 resize-none text-white placeholder-dark-500" placeholder="What's on your mind?"></textarea>
+      <div class="flex gap-3">
+        <button onclick="closeJournalModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
+        <button onclick="addJournal()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== DATA & STATE ======
+let appData = {
+  user: { name: '', goal: '', focusTime: 25 },
+  habits: [],
+  goals: [],
+  tasks: [],
+  skills: [],
+  journal: [],
+  focusSessions: 0,
+  streak: 0,
+  lastActive: null,
+  settings: {
+    reminderEnabled: false,
+    reminderTime: '20:00',
+    lastReminderDate: null,
+    testChecklist: {
+      reset: false,
+      onboarding: false,
+      crud: false,
+      reminders: false,
+      backup: false,
+      recurring: false
+    }
+  },
+  gamification: {
+    xp: 0,
+    level: 1,
+    achievements: []
+  }
+};
+let hasAnimatedOnboardingHabits = false;
+let globalSearchTerm = '';
+let reminderInterval = null;
+let renderCache = {
+  habits: '',
+  dashboardHabits: '',
+  tasks: '',
+  dashboardTasks: ''
+};
+
+const quotes = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
+  { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Your future is created by what you do today.", author: "Robert Kiyosaki" },
+  { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+  { text: "The mind is everything. What you think you become.", author: "Buddha" },
+  { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" }
+];
+
+const habitTemplates = {
+  gym: { name: 'Gym/Workout', icon: '🏋️', color: 'orange' },
+  study: { name: 'Study', icon: '📚', color: 'blue' },
+  sleep: { name: 'Sleep 8 Hours', icon: '😴', color: 'purple' },
+  water: { name: 'Drink 8 Glasses', icon: '💧', color: 'blue' },
+  meditation: { name: 'Meditation', icon: '🧘', color: 'green' },
+  reading: { name: 'Reading', icon: '📖', color: 'yellow' },
+  walk: { name: '30-min Walk', icon: '🚶', color: 'green' },
+  stretching: { name: 'Stretching', icon: '🤸', color: 'purple' },
+  journaling: { name: 'Journaling', icon: '📝', color: 'blue' },
+  coding: { name: 'Coding Practice', icon: '💻', color: 'blue' },
+  planning: { name: 'Daily Planning', icon: '📅', color: 'yellow' },
+  no_sugar: { name: 'No Sugar Day', icon: '🍭', color: 'pink' },
+  early_wake: { name: 'Wake Up Early', icon: '⏰', color: 'orange' },
+  screen_limit: { name: 'Screen Time Limit', icon: '📱', color: 'purple' }
+};
+
+const achievementCatalog = {
+  first_habit: { icon: '🔥', title: 'First Habit Done', description: 'Complete your first habit.' },
+  first_task: { icon: '✅', title: 'Task Closer', description: 'Complete your first task.' },
+  streak_7: { icon: '📅', title: '7-Day Streak', description: 'Reach a 7 day streak.' },
+  xp_500: { icon: '⭐', title: 'Rising Star', description: 'Earn 500 XP.' }
+};
+
+function normalizeAppData() {
+  appData.habits = Array.isArray(appData.habits) ? appData.habits : [];
+  appData.goals = Array.isArray(appData.goals) ? appData.goals : [];
+  appData.tasks = Array.isArray(appData.tasks) ? appData.tasks : [];
+  appData.skills = Array.isArray(appData.skills) ? appData.skills : [];
+  appData.journal = Array.isArray(appData.journal) ? appData.journal : [];
+  appData.settings = appData.settings || {};
+  appData.settings.reminderEnabled = !!appData.settings.reminderEnabled;
+  appData.settings.reminderTime = appData.settings.reminderTime || '20:00';
+  appData.settings.lastReminderDate = appData.settings.lastReminderDate || null;
+  appData.settings.testChecklist = {
+    reset: false,
+    onboarding: false,
+    crud: false,
+    reminders: false,
+    backup: false,
+    recurring: false,
+    ...(appData.settings.testChecklist || {})
+  };
+  appData.gamification = appData.gamification || {};
+  appData.gamification.xp = Number(appData.gamification.xp || 0);
+  appData.gamification.level = Number(appData.gamification.level || 1);
+  appData.gamification.achievements = Array.isArray(appData.gamification.achievements) ? appData.gamification.achievements : [];
+  appData.tasks = appData.tasks.map(t => ({
+    recurrence: 'none',
+    parentRecurringId: null,
+    ...t
+  }));
+}
+
+function syncSearchInputs() {
+  ['globalSearch'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value !== globalSearchTerm) el.value = globalSearchTerm;
+  });
+}
+
+function setGlobalSearch(value) {
+  globalSearchTerm = (value || '').toLowerCase().trim();
+  renderCache = { habits: '', dashboardHabits: '', tasks: '', dashboardTasks: '' };
+  syncSearchInputs();
+  renderAll();
+}
+
+function renderTestingChecklist() {
+  const container = document.getElementById('testingChecklist');
+  if (!container) return;
+  const items = [
+    { key: 'reset', label: 'Reset flow (Reset All Data -> onboarding page)' },
+    { key: 'onboarding', label: 'Onboarding flow and default habit creation' },
+    { key: 'crud', label: 'Add/edit/delete across habits, goals, tasks, skills, journal' },
+    { key: 'reminders', label: 'Reminder permission denied/granted and daily trigger' },
+    { key: 'backup', label: 'Export backup + import restore JSON' },
+    { key: 'recurring', label: 'Recurring tasks for multiple days' }
+  ];
+  container.innerHTML = items.map(item => `
+    <label class="flex items-center gap-3 p-3 rounded-lg bg-dark-200 border border-dark-300">
+      <input type="checkbox" class="w-4 h-4" ${appData.settings.testChecklist[item.key] ? 'checked' : ''} onchange="toggleTestingItem('${item.key}', this.checked)">
+      <span class="text-sm ${appData.settings.testChecklist[item.key] ? 'text-white' : 'text-dark-400'}">${item.label}</span>
+    </label>
+  `).join('');
+}
+
+function toggleTestingItem(key, checked) {
+  appData.settings.testChecklist[key] = checked;
+  saveData();
+  renderTestingChecklist();
+}
+
+function markAllTestingDone() {
+  Object.keys(appData.settings.testChecklist).forEach(k => appData.settings.testChecklist[k] = true);
+  saveData();
+  renderTestingChecklist();
+}
+
+function resetTestingChecklist() {
+  Object.keys(appData.settings.testChecklist).forEach(k => appData.settings.testChecklist[k] = false);
+  saveData();
+  renderTestingChecklist();
+}
+
+function awardXP(amount) {
+  if (!amount || amount < 1) return;
+  appData.gamification.xp += amount;
+  const newLevel = Math.max(1, Math.floor(appData.gamification.xp / 100) + 1);
+  appData.gamification.level = newLevel;
+  checkAchievements();
+}
+
+function unlockAchievement(key) {
+  if (appData.gamification.achievements.includes(key)) return;
+  appData.gamification.achievements.push(key);
+  const achievement = achievementCatalog[key];
+  if (achievement) {
+    showError(`${achievement.icon} Achievement unlocked: ${achievement.title}`);
+  }
+}
+
+function checkAchievements() {
+  const completedHabits = appData.habits.reduce((acc, h) => acc + h.completedDates.length, 0);
+  const completedTasks = appData.tasks.filter(t => t.completed).length;
+  if (completedHabits > 0) unlockAchievement('first_habit');
+  if (completedTasks > 0) unlockAchievement('first_task');
+  if (appData.streak >= 7) unlockAchievement('streak_7');
+  if (appData.gamification.xp >= 500) unlockAchievement('xp_500');
+}
+
+function renderAchievements() {
+  const container = document.getElementById('achievementList');
+  if (!container) return;
+  const unlocked = appData.gamification.achievements;
+  if (!unlocked.length) {
+    container.innerHTML = '<p class="text-dark-500">No achievements yet. Complete habits and tasks to unlock badges.</p>';
+    return;
+  }
+  container.innerHTML = unlocked.map(key => {
+    const item = achievementCatalog[key];
+    if (!item) return '';
+    return `<div class="p-3 rounded-lg bg-dark-200 border border-dark-300"><div class="text-white font-medium">${item.icon} ${item.title}</div><div class="text-xs text-dark-500 mt-1">${item.description}</div></div>`;
+  }).join('');
+}
+
+function renderWeeklyAnalytics() {
+  const chart = document.getElementById('weeklyChart');
+  const insights = document.getElementById('weeklyInsights');
+  if (!chart || !insights) return;
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  const dayScores = days.map(d => {
+    const dayStr = d.toDateString();
+    const habitsCompleted = appData.habits.filter(h => h.completedDates.includes(dayStr)).length;
+    const habitsRatio = appData.habits.length ? habitsCompleted / appData.habits.length : 0;
+    const tasksForDay = appData.tasks.filter(t => t.date === dayStr);
+    const tasksCompleted = tasksForDay.filter(t => t.completed).length;
+    const tasksRatio = tasksForDay.length ? tasksCompleted / tasksForDay.length : 0;
+    return Math.round(((habitsRatio + tasksRatio) / 2) * 100);
+  });
+  chart.innerHTML = dayScores.map((v, idx) => {
+    const label = days[idx].toLocaleDateString('en-US', { weekday: 'short' });
+    return `<div class="flex flex-col items-center justify-end gap-2"><div class="w-full bg-dark-300 rounded-md overflow-hidden h-24 flex items-end"><div class="w-full bg-brand-500/80" style="height:${Math.max(8, v)}%"></div></div><span class="text-xs text-dark-500">${label}</span></div>`;
+  }).join('');
+  const avg = Math.round(dayScores.reduce((a, b) => a + b, 0) / (dayScores.length || 1));
+  insights.textContent = `7-day consistency score: ${avg}%.`;
+}
+
+function saveReminderSettings() {
+  const enabled = !!document.getElementById('reminderEnabled')?.checked;
+  const time = document.getElementById('reminderTime')?.value || '20:00';
+  appData.settings.reminderEnabled = enabled;
+  appData.settings.reminderTime = time;
+  appData.settings.testChecklist.reminders = true;
+  if (enabled && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  saveData();
+  startReminderLoop();
+}
+
+function startReminderLoop() {
+  if (reminderInterval) clearInterval(reminderInterval);
+  reminderInterval = setInterval(checkDailyReminder, 30000);
+  checkDailyReminder();
+}
+
+function checkDailyReminder() {
+  if (!appData.settings?.reminderEnabled) return;
+  const now = new Date();
+  const nowTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const today = now.toDateString();
+  if (nowTime !== appData.settings.reminderTime) return;
+  if (appData.settings.lastReminderDate === today) return;
+  appData.settings.lastReminderDate = today;
+  saveData();
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    new Notification('777Life Reminder', { body: 'Time to check your habits and tasks.' });
+  } else {
+    showError('Reminder: Time to check your habits and tasks.');
+  }
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `777life-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  appData.settings.testChecklist.backup = true;
+  saveData();
+  renderTestingChecklist();
+}
+
+function importData(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      appData = parsed;
+      normalizeAppData();
+      saveData();
+      showMainApp();
+      appData.settings.testChecklist.backup = true;
+      saveData();
+    } catch (e) {
+      showError('Import failed: invalid backup file.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function processRecurringTasks() {
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  let created = false;
+  appData.tasks.filter(t => t.completed && t.recurrence && t.recurrence !== 'none').forEach(task => {
+    const parentId = task.parentRecurringId || task.id;
+    const hasFuture = appData.tasks.some(existing => {
+      if ((existing.parentRecurringId || existing.id) !== parentId) return false;
+      if (existing.completed) return false;
+      if (task.recurrence === 'daily') return existing.date === todayStr;
+      const existingDate = new Date(existing.date);
+      return existingDate >= weekStart;
+    });
+    if (!hasFuture) {
+      appData.tasks.push({
+        id: Date.now() + Math.random(),
+        title: task.title,
+        priority: task.priority,
+        completed: false,
+        date: todayStr,
+        recurrence: task.recurrence,
+        parentRecurringId: parentId
+      });
+      created = true;
+    }
+  });
+  if (created) saveData();
+}
+
+// ====== INITIALIZATION ======
+function init() {
+  try {
+    const saved = localStorage.getItem('777Life_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate minimal structure
+      if (parsed.user && parsed.habits !== undefined) {
+        appData = parsed;
+        normalizeAppData();
+        showMainApp();
+      } else {
+        throw new Error('Invalid data structure');
+      }
+    } else {
+      // No saved profile: stay on onboarding/login page
+      showOnboarding();
+    }
+  } catch (e) {
+    console.error('Init error:', e);
+    // Reset to clean state
+    localStorage.removeItem('777Life_data');
+    showOnboarding();
+  }
+  lucide.createIcons();
+  if (!document.getElementById('mainApp').classList.contains('hidden')) {
+    checkStreak();
+  }
+}
+
+function saveData() {
+  localStorage.setItem('777Life_data', JSON.stringify(appData));
+}
+
+// ====== ONBOARDING ======
+function nextOnboardStep(step) {
+  document.querySelectorAll('.onboard-step').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`onboard-step-${step}`).classList.remove('hidden');
+  updateStepIndicators(step);
+}
+
+function prevOnboardStep(step) {
+  document.querySelectorAll('.onboard-step').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`onboard-step-${step}`).classList.remove('hidden');
+  updateStepIndicators(step);
+}
+
+function updateStepIndicators(currentStep) {
+  document.querySelectorAll('.step-indicator').forEach(el => {
+    const step = parseInt(el.dataset.step);
+    if (step === currentStep) {
+      el.classList.remove('bg-dark-300', 'text-dark-500');
+      el.classList.add('bg-brand-600', 'text-white');
+    } else if (step < currentStep) {
+      el.classList.remove('bg-dark-300', 'text-dark-500', 'bg-brand-600', 'text-white');
+      el.classList.add('bg-brand-500', 'text-white');
+    } else {
+      el.classList.remove('bg-brand-600', 'bg-brand-500', 'text-white');
+      el.classList.add('bg-dark-300', 'text-dark-500');
+    }
+  });
+  lucide.createIcons();
+}
+
+function setFocusTime(mins) {
+  document.getElementById('focusTime').value = mins;
+  document.querySelectorAll('.focus-opt').forEach(el => el.classList.remove('border-brand-500', 'bg-brand-500/20'));
+  document.querySelector(`.focus-opt[data-time="${mins}"]`).classList.add('border-brand-500', 'bg-brand-500/20');
+}
+
+function completeOnboarding() {
+  const name = document.getElementById('userName').value || 'User';
+  const goal = document.getElementById('mainGoal').value;
+  const focusTime = parseInt(document.getElementById('focusTime').value);
+  
+  appData.user = { name, goal, focusTime };
+  
+  // Add selected habits
+  document.querySelectorAll('.habit-pref:checked').forEach(cb => {
+    const t = habitTemplates[cb.value];
+    appData.habits.push({
+      id: Date.now() + Math.random(),
+      name: t.name,
+      icon: t.icon,
+      color: t.color,
+      completedDates: [],
+      onboardingSelected: true
+    });
+  });
+  
+  // Add default goal based on selection
+  const goalTitles = {
+    fitness: 'Build Muscle & Gain Weight',
+    weightloss: 'Lose Weight & Get Fit',
+    study: 'Achieve Academic Excellence',
+    career: 'Advance My Career',
+    mindfulness: 'Improve Mental Wellness'
+  };
+  appData.goals.push({
+    id: Date.now(),
+    title: goalTitles[goal],
+    description: 'My main life goal',
+    deadline: new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
+    progress: 0
+  });
+  
+  appData.lastActive = new Date().toDateString();
+  appData.settings.testChecklist.onboarding = true;
+  saveData();
+  showMainApp();
+}
+
+function showMainApp() {
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  const safeName = (appData.user?.name || 'User').trim() || 'User';
+  document.getElementById('displayName').textContent = safeName;
+  document.getElementById('dashboardName').textContent = safeName;
+  document.getElementById('userInitial').textContent = safeName.charAt(0).toUpperCase();
+  
+  const hour = new Date().getHours();
+  document.getElementById('greetingTime').textContent = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+  
+  // Show random quote
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  document.getElementById('dailyQuote').textContent = `"${q.text}"`;
+  document.getElementById('quoteAuthor').textContent = `— ${q.author}`;
+  
+  // Initialize AI page
+  updateAIPage();
+  normalizeAppData();
+  const reminderToggle = document.getElementById('reminderEnabled');
+  const reminderTime = document.getElementById('reminderTime');
+  if (reminderToggle) reminderToggle.checked = appData.settings.reminderEnabled;
+  if (reminderTime) reminderTime.value = appData.settings.reminderTime;
+  syncSearchInputs();
+  startReminderLoop();
+  
+  renderAll();
+  renderTestingChecklist();
+  lucide.createIcons();
+}
+
+function showOnboarding() {
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('onboarding').classList.remove('hidden');
+  if (reminderInterval) clearInterval(reminderInterval);
+  nextOnboardStep(1);
+}
+
+// ====== NAVIGATION ======
+function showPage(page) {
+  try {
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    const pageEl = document.getElementById(`page-${page}`);
+    if (pageEl) pageEl.classList.add('active');
+    
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const navEl = document.querySelector(`.nav-item[data-page="${page}"]`);
+    if (navEl) navEl.classList.add('active');
+    
+    // Initialize AI page when navigating to it
+    if (page === 'ai') {
+      updateAIPage();
+    }
+    if (page === 'settings') {
+      renderTestingChecklist();
+    }
+    
+    // Close mobile sidebar on navigation
+    if (window.innerWidth < 768 && document.getElementById('sidebar').classList.contains('mobile-open')) {
+      toggleMobileSidebar();
+    }
+  } catch (e) {
+    console.error('Navigation error:', e);
+  }
+  return false;
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('mobile-open');
+  overlay.classList.toggle('active');
+}
+
+// ====== STREAK ======
+function checkStreak() {
+  const today = new Date().toDateString();
+  const last = appData.lastActive;
+  
+  if (!last) {
+    appData.streak = 1;
+  } else if (last === today) {
+    // Same day, keep streak
+  } else {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (last === yesterday) {
+      appData.streak++;
+    } else {
+      appData.streak = 1;
+    }
+  }
+  appData.lastActive = today;
+  checkAchievements();
+  saveData();
+}
+
+// ====== ANIMATIONS ======
+function createSuccessBurst(triggerEl = null) {
+  const container = document.createElement('div');
+  container.className = 'success-burst-container';
+
+  let x = window.innerWidth / 2;
+  let y = window.innerHeight / 2;
+  if (triggerEl && typeof triggerEl.getBoundingClientRect === 'function') {
+    const rect = triggerEl.getBoundingClientRect();
+    x = rect.left + rect.width / 2;
+    y = rect.top + rect.height / 2;
+  }
+  container.style.left = `${x}px`;
+  container.style.top = `${y}px`;
+
+  const ring = document.createElement('div');
+  ring.className = 'success-ring';
+  container.appendChild(ring);
+
+  const sparkColors = ['#22c55e', '#4ade80', '#86efac', '#fbbf24'];
+  const sparkCount = 14;
+  for (let i = 0; i < sparkCount; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'success-spark';
+    const angle = (Math.PI * 2 * i) / sparkCount;
+    const distance = 36 + Math.random() * 30;
+    spark.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+    spark.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
+    spark.style.backgroundColor = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+    container.appendChild(spark);
+  }
+
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 1000);
+}
+
+function animateButton(element) {
+  element.classList.add('bounce');
+  setTimeout(() => element.classList.remove('bounce'), 500);
+}
+
+// ====== HABITS ======
+function renderHabits() {
+  const today = new Date().toDateString();
+  const container = document.getElementById('habitsList');
+  const dashContainer = document.getElementById('dashboardHabits');
+  const visibleHabits = appData.habits.filter(h => !globalSearchTerm || h.name.toLowerCase().includes(globalSearchTerm));
+  
+  const habitsHtml = visibleHabits.map(h => {
+    const isDone = h.completedDates.includes(today);
+    const streak = calculateHabitStreak(h);
+    const colorClasses = {
+      orange: 'bg-accent-500/20 text-accent-500',
+      green: 'bg-brand-500/20 text-brand-500',
+      blue: 'bg-blue-500/20 text-blue-500',
+      purple: 'bg-purple-500/20 text-purple-500',
+      pink: 'bg-pink-500/20 text-pink-500',
+      yellow: 'bg-yellow-500/20 text-yellow-500'
+    };
+    return `
+      <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 card-hover ${isDone ? 'ring-2 ring-brand-500' : ''}">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 ${colorClasses[h.color]} rounded-xl flex items-center justify-center text-2xl">${h.icon}</div>
+          <button onclick="toggleHabit('${h.id}', this)" class="w-10 h-10 rounded-full ${isDone ? 'bg-brand-500 text-white' : 'bg-dark-300'} flex items-center justify-center transition">
+            <i data-lucide="${isDone ? 'check' : 'circle'}" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <h3 class="font-semibold text-white">${h.name}</h3>
+        <div class="flex items-center gap-2 mt-2 text-sm text-dark-500">
+          <span class="streak-fire">🔥</span>
+          <span>${streak} day streak</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  if (renderCache.habits !== habitsHtml) {
+    container.innerHTML = habitsHtml;
+    renderCache.habits = habitsHtml;
+  }
+  
+  const dashHabitsHtml = visibleHabits.slice(0, 4).map(h => {
+    const isDone = h.completedDates.includes(today);
+    const onboardingAnimClass = (!hasAnimatedOnboardingHabits && h.onboardingSelected) ? 'onboarding-habit-highlight' : '';
+    return `
+      <label class="flex items-center gap-3 p-3 bg-dark-200 rounded-xl cursor-pointer hover:bg-dark-300 transition ${onboardingAnimClass}">
+        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleHabit('${h.id}', this)" class="w-5 h-5">
+        <span class="text-xl">${h.icon}</span>
+        <span class="flex-1 text-dark-300">${h.name}</span>
+      </label>
+    `;
+  }).join('');
+  if (renderCache.dashboardHabits !== dashHabitsHtml) {
+    dashContainer.innerHTML = dashHabitsHtml;
+    renderCache.dashboardHabits = dashHabitsHtml;
+  }
+
+  if (!hasAnimatedOnboardingHabits) {
+    hasAnimatedOnboardingHabits = true;
+  }
+  
+  lucide.createIcons();
+}
+
+function calculateHabitStreak(habit) {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    if (habit.completedDates.includes(d.toDateString())) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function toggleHabit(id, triggerEl = null) {
+  const habit = appData.habits.find(h => h.id == id);
+  const today = new Date().toDateString();
+  const wasCompleted = habit.completedDates.includes(today);
+  
+  if (wasCompleted) {
+    habit.completedDates = habit.completedDates.filter(d => d !== today);
+  } else {
+    habit.completedDates.push(today);
+    createSuccessBurst(triggerEl);
+    awardXP(10);
+  }
+  
+  saveData();
+  renderCache.habits = '';
+  renderCache.dashboardHabits = '';
+  renderHabits();
+  renderWeeklyAnalytics();
+  renderAchievements();
+  updateStats();
+}
+
+function openHabitModal() { document.getElementById('habitModal').classList.remove('hidden'); }
+function closeHabitModal() { document.getElementById('habitModal').classList.add('hidden'); }
+
+function addHabit() {
+  const name = document.getElementById('habitName').value;
+  if (!name) return;
+  appData.habits.push({
+    id: Date.now(),
+    name,
+    icon: document.getElementById('habitIcon').value,
+    color: document.getElementById('habitColor').value,
+    completedDates: []
+  });
+  appData.settings.testChecklist.crud = true;
+  saveData();
+  closeHabitModal();
+  renderHabits();
+  document.getElementById('habitName').value = '';
+}
+
+// ====== GOALS ======
+function renderGoals() {
+  const container = document.getElementById('goalsList');
+  const visibleGoals = appData.goals.filter(g => !globalSearchTerm || `${g.title} ${g.description}`.toLowerCase().includes(globalSearchTerm));
+  container.innerHTML = visibleGoals.map(g => {
+    const progress = g.progress || 0;
+    return `
+      <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 card-hover">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex-1">
+            <h3 class="font-semibold text-white text-lg">${g.title}</h3>
+            <p class="text-dark-500 text-sm mt-1">${g.description}</p>
+            <p class="text-dark-500 text-xs mt-2">📅 Due: ${g.deadline}</p>
+          </div>
+          <button onclick="deleteGoal('${g.id}')" class="text-red-400 hover:text-red-300">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex-1 h-3 bg-dark-300 rounded-full overflow-hidden">
+            <div class="h-full bg-brand-600 rounded-full progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <span class="text-sm font-medium text-white">${progress}%</span>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="updateGoalProgress('${g.id}', -10)" class="px-3 py-1 bg-dark-300 rounded-lg text-sm hover:bg-dark-400 text-white btn-press transition">-10%</button>
+          <button onclick="updateGoalProgress('${g.id}', 10)" class="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 btn-press transition">+10%</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
+function openGoalModal() { document.getElementById('goalModal').classList.remove('hidden'); }
+function closeGoalModal() { document.getElementById('goalModal').classList.add('hidden'); }
+
+function addGoal() {
+  const title = document.getElementById('goalTitle').value;
+  if (!title) return;
+  appData.goals.push({
+    id: Date.now(),
+    title,
+    description: document.getElementById('goalDesc').value,
+    deadline: document.getElementById('goalDeadline').value,
+    progress: 0
+  });
+  appData.settings.testChecklist.crud = true;
+  saveData();
+  closeGoalModal();
+  renderGoals();
+  document.getElementById('goalTitle').value = '';
+  document.getElementById('goalDesc').value = '';
+}
+
+function deleteGoal(id) {
+  appData.goals = appData.goals.filter(g => g.id != id);
+  saveData();
+  renderGoals();
+}
+
+function updateGoalProgress(id, delta) {
+  const goal = appData.goals.find(g => g.id == id);
+  goal.progress = Math.max(0, Math.min(100, (goal.progress || 0) + delta));
+  if (delta > 0) awardXP(delta);
+  saveData();
+  renderGoals();
+}
+
+// ====== TASKS ======
+let taskFilter = 'all';
+
+function renderTasks() {
+  const container = document.getElementById('tasksList');
+  const dashContainer = document.getElementById('dashboardTasks');
+  const today = new Date().toDateString();
+  
+  let filtered = appData.tasks.filter(t => !globalSearchTerm || t.title.toLowerCase().includes(globalSearchTerm));
+  if (taskFilter === 'pending') filtered = appData.tasks.filter(t => !t.completed);
+  if (taskFilter === 'completed') filtered = appData.tasks.filter(t => t.completed);
+  if (globalSearchTerm) filtered = filtered.filter(t => t.title.toLowerCase().includes(globalSearchTerm));
+  
+  const priorityColors = {
+    high: 'bg-red-500/20 text-red-400',
+    medium: 'bg-accent-500/20 text-accent-400',
+    low: 'bg-brand-500/20 text-brand-400'
+  };
+  
+  const tasksHtml = filtered.map(t => `
+    <div class="flex items-center gap-4 p-4 hover:bg-dark-200 transition">
+      <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${t.id}', this)" class="w-5 h-5">
+      <div class="flex-1 ${t.completed ? 'line-through text-dark-500' : 'text-white'}">
+        <span class="font-medium">${t.title}</span>
+      </div>
+      <span class="px-2 py-1 rounded text-xs font-medium ${priorityColors[t.priority]}">${t.priority}${t.recurrence && t.recurrence !== 'none' ? ` • ${t.recurrence}` : ''}</span>
+      <button onclick="deleteTask('${t.id}')" class="text-red-400 hover:text-red-300">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  `).join('');
+  if (renderCache.tasks !== tasksHtml) {
+    container.innerHTML = tasksHtml;
+    renderCache.tasks = tasksHtml;
+  }
+  
+  const dashTasksHtml = appData.tasks.filter(t => !t.completed && (!globalSearchTerm || t.title.toLowerCase().includes(globalSearchTerm))).slice(0, 4).map(t => `
+    <label class="flex items-center gap-3 p-3 bg-dark-200 rounded-xl cursor-pointer hover:bg-dark-300 transition">
+      <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${t.id}', this)" class="w-5 h-5">
+      <span class="flex-1 text-dark-300">${t.title}</span>
+      <span class="px-2 py-1 rounded text-xs ${priorityColors[t.priority]}">${t.priority}</span>
+    </label>
+  `).join('');
+  if (renderCache.dashboardTasks !== dashTasksHtml) {
+    dashContainer.innerHTML = dashTasksHtml;
+    renderCache.dashboardTasks = dashTasksHtml;
+  }
+  
+  lucide.createIcons();
+}
+
+function filterTasks(filter) {
+  taskFilter = filter;
+  document.querySelectorAll('.task-filter').forEach(el => {
+    el.classList.remove('bg-brand-600', 'text-white');
+    el.classList.add('text-dark-400');
+  });
+  document.querySelector(`.task-filter[data-filter="${filter}"]`).classList.add('bg-brand-600', 'text-white');
+  document.querySelector(`.task-filter[data-filter="${filter}"]`).classList.remove('text-dark-400');
+  renderTasks();
+}
+
+function openTaskModal() { document.getElementById('taskModal').classList.remove('hidden'); }
+function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+function addTask() {
+  const title = document.getElementById('taskTitle').value;
+  if (!title) return;
+  const recurrence = document.getElementById('taskRecurrence').value;
+  appData.tasks.push({
+    id: Date.now(),
+    title,
+    priority: document.getElementById('taskPriority').value,
+    completed: false,
+    date: new Date().toDateString(),
+    recurrence,
+    parentRecurringId: null
+  });
+  awardXP(4);
+  appData.settings.testChecklist.crud = true;
+  saveData();
+  closeTaskModal();
+  renderCache.tasks = '';
+  renderCache.dashboardTasks = '';
+  renderTasks();
+  renderWeeklyAnalytics();
+  updateStats();
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskRecurrence').value = 'none';
+}
+
+function toggleTask(id, triggerEl = null) {
+  const task = appData.tasks.find(t => t.id == id);
+  task.completed = !task.completed;
+  if (task.completed) {
+    createSuccessBurst(triggerEl);
+    awardXP(8);
+    processRecurringTasks();
+    appData.settings.testChecklist.recurring = task.recurrence !== 'none' || appData.settings.testChecklist.recurring;
+  }
+  saveData();
+  renderCache.tasks = '';
+  renderCache.dashboardTasks = '';
+  renderTasks();
+  renderWeeklyAnalytics();
+  renderAchievements();
+  updateStats();
+  renderTestingChecklist();
+}
+
+function deleteTask(id) {
+  appData.tasks = appData.tasks.filter(t => t.id != id);
+  saveData();
+  renderCache.tasks = '';
+  renderCache.dashboardTasks = '';
+  renderTasks();
+  renderWeeklyAnalytics();
+  updateStats();
+}
+
+// ====== SKILLS ======
+function renderSkills() {
+  const container = document.getElementById('skillsList');
+  const visibleSkills = appData.skills.filter(s => !globalSearchTerm || s.name.toLowerCase().includes(globalSearchTerm));
+  container.innerHTML = visibleSkills.map(s => `
+    <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white">${s.name}</h3>
+        <button onclick="deleteSkill('${s.id}')" class="text-red-400 hover:text-red-300">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex-1 h-3 bg-dark-300 rounded-full overflow-hidden">
+          <div class="h-full bg-brand-600 rounded-full progress-fill" style="width: ${s.level}%"></div>
+        </div>
+        <span class="text-sm font-medium text-white">${s.level}%</span>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button onclick="updateSkillLevel('${s.id}', -5)" class="px-3 py-1 bg-dark-300 rounded-lg text-sm hover:bg-dark-400 text-white btn-press transition">-5%</button>
+        <button onclick="updateSkillLevel('${s.id}', 5)" class="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 btn-press transition">+5%</button>
+      </div>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+function openSkillModal() { document.getElementById('skillModal').classList.remove('hidden'); }
+function closeSkillModal() { document.getElementById('skillModal').classList.add('hidden'); }
+
+function addSkill() {
+  const name = document.getElementById('skillName').value;
+  if (!name) return;
+  appData.skills.push({
+    id: Date.now(),
+    name,
+    level: parseInt(document.getElementById('skillLevel').value)
+  });
+  appData.settings.testChecklist.crud = true;
+  saveData();
+  closeSkillModal();
+  renderSkills();
+  document.getElementById('skillName').value = '';
+  document.getElementById('skillLevel').value = 0;
+  document.getElementById('skillLevelVal').textContent = '0%';
+}
+
+function deleteSkill(id) {
+  appData.skills = appData.skills.filter(s => s.id != id);
+  saveData();
+  renderSkills();
+}
+
+function updateSkillLevel(id, delta) {
+  const skill = appData.skills.find(s => s.id == id);
+  skill.level = Math.max(0, Math.min(100, skill.level + delta));
+  if (delta > 0) awardXP(delta * 2);
+  saveData();
+  renderSkills();
+}
+
+// ====== JOURNAL ======
+function renderJournal() {
+  const container = document.getElementById('journalList');
+  container.innerHTML = appData.journal
+    .filter(j => !globalSearchTerm || `${j.title} ${j.content}`.toLowerCase().includes(globalSearchTerm))
+    .sort((a,b) => new Date(b.date) - new Date(a.date)).map(j => `
+    <div class="bg-dark-100 rounded-xl p-6 border border-dark-200 card-hover">
+      <div class="flex items-start justify-between mb-3">
+        <h3 class="font-semibold text-white">${j.title}</h3>
+        <button onclick="deleteJournal('${j.id}')" class="text-red-400 hover:text-red-300">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-dark-500 text-sm line-clamp-4">${j.content}</p>
+      <p class="text-dark-500 text-xs mt-3">${new Date(j.date).toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+function openJournalModal() { document.getElementById('journalModal').classList.remove('hidden'); }
+function closeJournalModal() { document.getElementById('journalModal').classList.add('hidden'); }
+
+function addJournal() {
+  const title = document.getElementById('journalTitle').value;
+  const content = document.getElementById('journalContent').value;
+  if (!title || !content) return;
+  appData.journal.push({
+    id: Date.now(),
+    title,
+    content,
+    date: new Date().toISOString()
+  });
+  appData.settings.testChecklist.crud = true;
+  saveData();
+  closeJournalModal();
+  renderJournal();
+  document.getElementById('journalTitle').value = '';
+  document.getElementById('journalContent').value = '';
+}
+
+function deleteJournal(id) {
+  appData.journal = appData.journal.filter(j => j.id != id);
+  saveData();
+  renderJournal();
+}
+
+// ====== FOCUS TIMER ======
+let timerInterval = null;
+let timerRunning = false;
+let timerSeconds = 25 * 60;
+let timerTotal = 25 * 60;
+
+function renderTimer() {
+  const mins = Math.floor(timerSeconds / 60);
+  const secs = timerSeconds % 60;
+  document.getElementById('timerDisplay').textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+  document.getElementById('focusSessions').textContent = appData.focusSessions;
+  
+  const progress = 1 - (timerSeconds / timerTotal);
+  const circumference = 553; // 2 * PI * 88 for mobile (also works for desktop with responsive scaling)
+  const offset = circumference * (1 - progress);
+  document.getElementById('timerRing').style.strokeDashoffset = offset;
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerBtn').textContent = 'Start';
+    document.getElementById('timerLabel').textContent = 'Paused';
+  } else {
+    timerRunning = true;
+    document.getElementById('timerBtn').textContent = 'Pause';
+    document.getElementById('timerLabel').textContent = 'Focus';
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      renderTimer();
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        appData.focusSessions++;
+        saveData();
+        createSuccessBurst(document.getElementById('timerRing'));
+        alert('🎉 Focus session complete! Great work!');
+        resetTimer();
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = appData.user.focusTime * 60;
+  timerTotal = timerSeconds;
+  document.getElementById('timerBtn').textContent = 'Start';
+  document.getElementById('timerLabel').textContent = 'Focus';
+  renderTimer();
+}
+
+// ====== AI COACH ======
+const aiResponses = {
+  fitness: {
+    tip: "💪 Remember: Consistency beats intensity. A 20-minute workout done daily beats a 2-hour workout done once a week!",
+    motivation: "🔥 You're building more than muscle - you're building discipline. Every rep counts!",
+    focus: "🎯 Today focus on your weakest area. Is it legs? Core? Cardio? Attack it head-on!",
+    workout: "🏋️ Try this full-body circuit: Push-ups (3x15), Squats (3x20), Plank (3x45s), Lunges (3x12 each leg)",
+    nutrition: "🥗 Protein is key for muscle building. Aim for 1.6-2.2g per kg of body weight daily!"
+  },
+  weightloss: {
+    tip: "🔥 Small calorie deficit (300-500) is sustainable. Don't starve yourself!",
+    motivation: "💪 Every healthy choice is a victory. Celebrate progress, not perfection!",
+    focus: "🎯 Focus on one habit today: More water, one less sugary drink, or a 30-minute walk.",
+    workout: "🏃 Try HIIT: 30s sprint, 30s rest, repeat 10 times. Total 10 minutes!",
+    nutrition: "🥗 Fill half your plate with vegetables. It's the easiest way to reduce calories!"
+  },
+  study: {
+    tip: "📚 Use the Pomodoro technique: 25min focus, 5min break. It really works!",
+    motivation: "🧠 Knowledge compounds. What you learn today builds on yesterday's foundation.",
+    focus: "🎯 Tackle your hardest subject first when your mind is freshest.",
+    workout: "🧘 Take a 5-minute stretch break every hour. Your brain needs oxygen!",
+    nutrition: "🫐 Blueberries and nuts are brain food. Keep them handy while studying!"
+  },
+  career: {
+    tip: "💼 Network before you need to. Build relationships when things are going well.",
+    motivation: "🚀 Your career is a marathon, not a sprint. Pace yourself for the long game.",
+    focus: "🎯 Identify one skill that would have the biggest impact on your career growth. Work on it today.",
+    workout: "🏋️ Morning workouts boost productivity. Even 15 minutes makes a difference!",
+    nutrition: "☕ Time your coffee right - 1-2 hours after waking for optimal focus without jitters!"
+  },
+  mindfulness: {
+    tip: "🧘 Start with just 5 minutes of meditation. Consistency matters more than duration.",
+    motivation: "🌟 You're doing this for yourself. Be kind to yourself on this journey.",
+    focus: "🎯 Set a mindfulness intention for today: \"I will pause before reacting.\"",
+    workout: "🧘 Try yoga - it combines movement with mindfulness. Perfect for your goals!",
+    nutrition: "🍵 Chamomile tea before bed can improve sleep quality and mindfulness practice!"
+  }
+};
+
+function getCoachingContext() {
+  const today = new Date().toDateString();
+  const selectedHabits = appData.habits || [];
+  const completedHabitsToday = selectedHabits.filter(h => h.completedDates.includes(today));
+  const pendingHabitsToday = selectedHabits.filter(h => !h.completedDates.includes(today));
+  const todayTasks = (appData.tasks || []).filter(t => t.date === today);
+  const completedTasksToday = todayTasks.filter(t => t.completed);
+  const pendingTasksToday = todayTasks.filter(t => !t.completed);
+  const topHabitStreak = selectedHabits.reduce((best, habit) => {
+    const streak = calculateHabitStreak(habit);
+    return streak > best.streak ? { name: habit.name, streak } : best;
+  }, { name: 'None yet', streak: 0 });
+
+  const weeklyHabitRate = selectedHabits.length
+    ? Math.round(
+        selectedHabits.reduce((acc, h) => acc + h.completedDates.length, 0) /
+        (selectedHabits.length * 7) * 100
+      )
+    : 0;
+
+  return {
+    today,
+    selectedHabits,
+    completedHabitsToday,
+    pendingHabitsToday,
+    todayTasks,
+    completedTasksToday,
+    pendingTasksToday,
+    topHabitStreak,
+    weeklyHabitRate
+  };
+}
+
+function getPersonalizedAIResponse(question) {
+  const q = question.toLowerCase();
+  const goal = appData.user.goal || 'fitness';
+  const responses = aiResponses[goal] || aiResponses.fitness;
+  const ctx = getCoachingContext();
+
+  const pendingHabitNames = ctx.pendingHabitsToday.slice(0, 3).map(h => h.name).join(', ') || 'None';
+  const pendingTaskNames = ctx.pendingTasksToday.slice(0, 3).map(t => t.title).join(', ') || 'None';
+
+  if (q.includes('plan') || q.includes('today') || q.includes('what should i do')) {
+    return `Here is your personalized plan for today:\n1) Complete these priority habits: ${pendingHabitNames}.\n2) Finish pending tasks: ${pendingTaskNames}.\n3) Keep momentum with a focused ${appData.user.focusTime || 25}-minute session.\nYou already completed ${ctx.completedHabitsToday.length}/${ctx.selectedHabits.length} habits and ${ctx.completedTasksToday.length}/${ctx.todayTasks.length || 0} tasks today.`;
+  }
+
+  if (q.includes('motivat') || q.includes('discipl') || q.includes('lazy')) {
+    return `${responses.motivation}\nProgress check: ${ctx.completedHabitsToday.length}/${ctx.selectedHabits.length} habits done today. Your best current streak is ${ctx.topHabitStreak.streak} days (${ctx.topHabitStreak.name}). Focus on just one next win right now: ${pendingHabitNames.split(', ')[0] || 'one small habit'}.`;
+  }
+
+  if (q.includes('habit') || q.includes('streak') || q.includes('consisten')) {
+    return `Habit insights:\n- Completed today: ${ctx.completedHabitsToday.length}/${ctx.selectedHabits.length}\n- Pending habits: ${pendingHabitNames}\n- Best streak: ${ctx.topHabitStreak.streak} days (${ctx.topHabitStreak.name})\n- Weekly consistency estimate: ${Math.max(0, Math.min(100, ctx.weeklyHabitRate))}%\nCoach tip: protect your streak by finishing at least one pending habit before your next break.`;
+  }
+
+  if (q.includes('task') || q.includes('productiv') || q.includes('focus')) {
+    return `${responses.focus}\nTask status: ${ctx.completedTasksToday.length}/${ctx.todayTasks.length || 0} completed today.\nNext best tasks: ${pendingTaskNames}.\nUse this sequence: 25 min deep work -> 5 min break -> repeat for top 2 pending tasks.`;
+  }
+
+  if (q.includes('workout') || q.includes('exercise') || q.includes('gym')) {
+    return `${responses.workout}\nBased on your selected habits, pair workout with: ${pendingHabitNames.includes('Sleep') ? 'good sleep tonight' : 'a hydration check and cooldown stretch'}.`;
+  }
+
+  if (q.includes('nutrition') || q.includes('diet') || q.includes('food')) {
+    return `${responses.nutrition}\nAction today: complete nutrition-supportive habits and avoid energy crashes before your pending tasks (${pendingTaskNames}).`;
+  }
+
+  if (q.includes('tip')) {
+    return `${responses.tip}\nToday-specific boost: finish ${pendingHabitNames.split(', ')[0] || 'one habit'} next to improve your daily consistency score.`;
+  }
+
+  return `I am tracking your current progress and can coach you with real data.\nToday: ${ctx.completedHabitsToday.length}/${ctx.selectedHabits.length} habits, ${ctx.completedTasksToday.length}/${ctx.todayTasks.length || 0} tasks completed.\nAsk me for: "my plan for today", "habit insights", "motivation", or "focus plan".`;
+}
+
+function updateAIPage() {
+  const goal = (appData.user && appData.user.goal) || 'fitness';
+  const goalLabels = {
+    fitness: 'Fitness Journey',
+    weightloss: 'Weight Loss',
+    study: 'Academic Excellence',
+    career: 'Career Growth',
+    mindfulness: 'Mental Wellness'
+  };
+  document.getElementById('aiGoalLabel').textContent = goalLabels[goal] || 'journey';
+  
+  // Show/hide fitness-specific buttons
+  const fitnessBtns = document.querySelectorAll('.fitness-only');
+  const isFitness = goal === 'fitness' || goal === 'weightloss';
+  fitnessBtns.forEach(btn => btn.style.display = isFitness ? 'inline-block' : 'none');
+  
+  // Update welcome message
+  const messages = {
+    fitness: "Welcome! I'm your fitness coach. Ready to crush your workouts and hit your goals?",
+    weightloss: "Welcome! I'm here to help you on your weight loss journey. Let's make it sustainable!",
+    study: "Welcome! I'm your study coach. Let's maximize your learning and crush those exams!",
+    career: "Welcome! I'm your career coach. Let's accelerate your professional growth!",
+    mindfulness: "Welcome! I'm your mindfulness coach. Let's find peace and clarity together."
+  };
+  document.getElementById('aiWelcomeMessage').textContent = messages[goal] || "Welcome! I'm your personal AI coach, here to help you achieve your goals. How can I assist you today?";
+}
+
+function askAI(question) {
+  const response = getPersonalizedAIResponse(question);
+  addChatMessage('user', question);
+  setTimeout(() => addChatMessage('ai', response), 500);
+}
+
+function sendMessage() {
+  const input = document.getElementById('aiInput');
+  const message = input.value.trim();
+  if (!message) return;
+  
+  addChatMessage('user', message);
+  input.value = '';
+  
+  // Data-driven AI coaching response
+  setTimeout(() => {
+    const response = getPersonalizedAIResponse(message);
+    addChatMessage('ai', response);
+  }, 800);
+}
+
+function addChatMessage(type, text) {
+  const container = document.getElementById('aiChatMessages');
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'flex gap-3 ' + (type === 'user' ? 'flex-row-reverse' : '');
+  
+  if (type === 'user') {
+    messageDiv.innerHTML = `
+      <div class="bg-brand-600 rounded-2xl rounded-tr-none p-4 max-w-[80%]">
+        <p class="text-white">${text}</p>
+      </div>
+    `;
+  } else {
+    messageDiv.innerHTML = `
+      <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+      </div>
+      <div class="bg-dark-200 rounded-2xl rounded-tl-none p-4 max-w-[80%]">
+        <p class="text-white">${text}</p>
+      </div>
+    `;
+  }
+  
+  container.appendChild(messageDiv);
+  container.scrollTop = container.scrollHeight;
+  lucide.createIcons();
+}
+
+function clearChat() {
+  const container = document.getElementById('aiChatMessages');
+  container.innerHTML = `
+    <div class="flex gap-3">
+      <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+      </div>
+      <div class="bg-dark-200 rounded-2xl rounded-tl-none p-4 max-w-[80%]">
+        <p class="text-white" id="aiWelcomeMessage">Welcome! I'm your personal AI coach, here to help you achieve your goals. How can I assist you today?</p>
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+// ====== STATS ======
+function updateStats() {
+  const today = new Date().toDateString();
+  document.getElementById('statStreak').textContent = appData.streak;
+  
+  const completedToday = appData.habits.filter(h => h.completedDates.includes(today)).length;
+  document.getElementById('statHabits').textContent = `${completedToday}/${appData.habits.length}`;
+  
+  const completedTasks = appData.tasks.filter(t => t.completed && t.date === today).length;
+  document.getElementById('statTasks').textContent = `${completedTasks}/${appData.tasks.filter(t => t.date === today).length}`;
+  
+  document.getElementById('statGoals').textContent = appData.goals.filter(g => g.progress < 100).length;
+  document.getElementById('levelBadge').textContent = appData.gamification.level;
+  document.getElementById('xpValue').textContent = appData.gamification.xp;
+}
+
+// ====== RENDER ALL ======
+function renderAll() {
+  processRecurringTasks();
+  renderCache = { habits: '', dashboardHabits: '', tasks: '', dashboardTasks: '' };
+  renderHabits();
+  renderGoals();
+  renderTasks();
+  renderSkills();
+  renderJournal();
+  renderTimer();
+  renderWeeklyAnalytics();
+  renderAchievements();
+  renderTestingChecklist();
+  checkAchievements();
+  updateStats();
+}
+
+// ====== RESET ======
+function resetApp() {
+  if (confirm('Reset ALL app data and localStorage?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ====== DEBUG & ERROR HANDLING ======
+function debugClearStorage() {
+  if (confirm('Clear localStorage only? (Debug - reloads app)')) {
+    localStorage.removeItem('777Life_data');
+    location.reload();
+  }
+}
+
+function safeExecute(fn, context = '') {
+  try {
+    fn();
+  } catch (e) {
+    console.error(`Button error [${context}]:`, e);
+    alert(`Error: ${e.message}\nOpen console (F12) for details.`);
+  }
+}
+
+function showError(msg) {
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'fixed top-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-2xl z-50 max-w-sm';
+  errorDiv.innerHTML = `
+    <div class="flex items-center gap-2 mb-2">
+      <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+      <strong>Error</strong>
+    </div>
+    <p>${msg}</p>
+    <button onclick="this.parentElement.remove()" class="mt-2 text-sm underline hover:no-underline">Dismiss</button>
+  `;
+  document.body.appendChild(errorDiv);
+  lucide.createIcons();
+  setTimeout(() => errorDiv.remove(), 10000);
+}
+
+// Initialize
+init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch((err) => {
+      console.error('Service worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

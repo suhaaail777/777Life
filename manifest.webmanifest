@@ -1,0 +1,17 @@
+{
+  "name": "777Life",
+  "short_name": "777Life",
+  "description": "Personal life planner for habits, goals, tasks, and focus.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
