@@ -241,53 +241,183 @@ tailwind.config = {
   .gradient-animate { background-size: 200% 200%; animation: gradientMove 3s ease infinite; }
   @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
   
+  /* Onboarding animations */
+  .hero-float { animation: heroFloat 6s ease-in-out infinite; }
+  @keyframes heroFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+  
+  .logo-pulse { animation: logoPulse 3s ease-in-out infinite; }
+  @keyframes logoPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(34,197,94,0.3); }
+    50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(34,197,94,0.6); }
+  }
+  
+  .card-slide-up { animation: cardSlideUp 0.8s ease-out both; }
+  @keyframes cardSlideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .text-shimmer {
+    background: linear-gradient(90deg, #22c55e 0%, #4ade80 25%, #22c55e 50%, #4ade80 75%, #22c55e 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+  @keyframes shimmer {
+    to { background-position: 200% center; }
+  }
+  
+  .step-bounce { animation: stepBounce 0.6s ease-out both; }
+  @keyframes stepBounce {
+    0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+    60% { transform: scale(1.05) translateY(-5px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  
+  .float-particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: floatParticle 8s ease-in-out infinite;
+    opacity: 0.15;
+  }
+  @keyframes floatParticle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(180deg); }
+  }
+  
+  .input-glow:focus-within {
+    animation: inputGlow 0.5s ease-out;
+  }
+  @keyframes inputGlow {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    50% { box-shadow: 0 0 20px 5px rgba(34,197,94,0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  
+  .btn-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  .btn-shimmer:hover::before {
+    left: 100%;
+    transition: left 0.7s ease-in-out;
+  }
+  
   @media (max-width: 768px) {
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 30; }
     .sidebar-overlay.active { display: block; }
     aside { transform: translateX(-100%); transition: transform 0.3s ease; }
     aside.mobile-open { transform: translateX(0); }
     main { margin-left: 0 !important; }
+    
+    /* Mobile-optimized typography */
+    h1 { font-size: 1.5rem !important; line-height: 1.3; }
+    h2 { font-size: 1.25rem !important; }
+    h3 { font-size: 1.1rem !important; }
+    
+    /* Compact spacing */
+    .page { padding: 0.75rem !important; }
+    
+    /* Stats grid - 2 columns on mobile */
+    .stat-card { padding: 0.875rem !important; }
+    .stat-card .text-2xl { font-size: 1.5rem !important; }
+    .stat-card .w-12 { width: 2.5rem !important; height: 2.5rem !important; }
+    .stat-card .w-6 { width: 1.25rem !important; height: 1.25rem !important; }
+    
+    /* Compact cards */
+    .bg-dark-100.rounded-xl { padding: 0.875rem !important; }
+    
+    /* Smaller buttons on mobile */
+    button, .btn-press { padding: 0.625rem 1rem !important; font-size: 0.875rem !important; }
+    
+    /* Compact inputs */
+    input[type="text"], input[type="date"], textarea, select { padding: 0.625rem 0.875rem !important; font-size: 0.875rem !important; }
+    
+    /* AI Chat mobile optimization */
+    .quick-action { padding: 0.5rem 0.75rem !important; font-size: 0.75rem !important; }
+    
+    /* Focus timer smaller on mobile */
+    .w-48.h-48 { width: 10rem !important; height: 10rem !important; }
+    #timerDisplay { font-size: 2.5rem !important; }
+    
+    /* Modal padding */
+    #habitModal > div, #goalModal > div, #taskModal > div, #skillModal > div, #journalModal > div {
+      padding: 1.25rem !important;
+    }
+  }
+  
+  /* Extra small devices */
+  @media (max-width: 380px) {
+    h1 { font-size: 1.25rem !important; }
+    .stat-card .text-2xl { font-size: 1.25rem !important; }
+    .w-48.h-48 { width: 8rem !important; height: 8rem !important; }
+    #timerDisplay { font-size: 2rem !important; }
+  }
+  
+  /* Tablet optimizations */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .stat-card .text-2xl { font-size: 1.75rem !important; }
   }
 </style>
 </head>
 <body class="bg-dark-50 font-sans text-dark-700 min-h-screen">
 
 <!-- ====== ONBOARDING ====== -->
-<div id="onboarding" class="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-brand-900 p-4">
-  <div class="min-h-screen max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 py-8">
+<div id="onboarding" class="min-h-screen bg-gradient-to-br from-dark-50 via-dark-100 to-brand-900 p-4 overflow-hidden relative">
+  <!-- Floating particles background -->
+  <div class="float-particle" style="top: 10%; left: 10%; width: 60px; height: 60px; background: rgba(34,197,94,0.3);"></div>
+  <div class="float-particle" style="top: 60%; left: 80%; width: 40px; height: 40px; background: rgba(74,222,128,0.3); animation-delay: -2s;"></div>
+  <div class="float-particle" style="top: 80%; left: 20%; width: 50px; height: 50px; background: rgba(251,191,36,0.2); animation-delay: -4s;"></div>
+  
+  <div class="min-h-screen max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-16 py-6 relative z-10">
     <!-- Left Side - Hero -->
-    <div class="flex-1 text-center lg:text-left">
-      <div class="flex items-center justify-center lg:justify-start gap-3 mb-6">
-        <div class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
-          <i data-lucide="dumbbell" class="w-6 h-6 text-white"></i>
+    <div class="flex-1 text-center lg:text-left hero-float">
+      <div class="flex items-center justify-center lg:justify-start gap-3 mb-4">
+        <div class="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/30 logo-pulse">
+          <i data-lucide="dumbbell" class="w-5 h-5 text-white"></i>
         </div>
-        <span class="font-bold text-2xl text-white tracking-tight">777Life</span>
+        <span class="font-bold text-xl md:text-2xl text-white tracking-tight">777Life</span>
       </div>
-      <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
-        Forge Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">Best Self</span>
+      <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 leading-tight">
+        Forge Your <span class="text-shimmer">Best Self</span>
       </h1>
-      <p class="text-lg md:text-xl text-dark-400 mb-8 max-w-lg mx-auto lg:mx-0">
+      <p class="text-base md:text-lg text-dark-400 mb-6 max-w-lg mx-auto lg:mx-0">
         The ultimate fitness & productivity companion. Track habits, crush goals, and build the life you deserve.
       </p>
-      <div class="flex items-center justify-center lg:justify-start gap-6 text-sm text-dark-500">
+      <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs md:text-sm text-dark-500">
         <div class="flex items-center gap-2">
-          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-500"></i>
           <span>Habit Tracking</span>
         </div>
         <div class="flex items-center gap-2">
-          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-500"></i>
           <span>Goal Planning</span>
         </div>
         <div class="flex items-center gap-2">
-          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-500"></i>
           <span>Focus Timer</span>
         </div>
       </div>
     </div>
 
     <!-- Right Side - Onboarding Card -->
-    <div class="w-full max-w-md">
-      <div class="bg-dark-100/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-dark-200 p-6 md:p-8 fade-in">
+    <div class="w-full max-w-sm">
+      <div class="bg-dark-100/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-dark-200 p-4 md:p-6 card-slide-up">
         <!-- Progress Indicator -->
         <div class="flex items-center justify-between mb-8">
           <div class="flex gap-2">
@@ -608,6 +738,7 @@ tailwind.config = {
         </div>
       </div>
 
+
       <!-- Today's Habits & Tasks -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-dark-100 rounded-xl p-6 border border-dark-200">
@@ -623,6 +754,49 @@ tailwind.config = {
             Today's Tasks
           </h3>
           <div id="dashboardTasks" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- Coming Soon: Online Consultation -->
+      <div class="mt-8 bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded-xl border border-purple-500/30 p-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <i data-lucide="video" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white text-lg">Online Consultation</h3>
+              <div class="flex items-center gap-2">
+                <span class="text-xs bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded-full font-medium">Coming Soon</span>
+                <span class="text-xs text-dark-500">Get expert guidance</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-dark-400 text-sm mb-4 max-w-2xl">
+            Connect with certified fitness trainers, nutritionists, and productivity coaches through live video sessions. Personalized advice tailored to your goals.
+          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2 text-sm text-dark-500">
+              <i data-lucide="users" class="w-4 h-4"></i>
+              <span>Expert Coaches</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-dark-500">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+              <span>Flexible Scheduling</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-dark-500">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <span>Secure & Private</span>
+            </div>
+          </div>
+          <div class="mt-6">
+            <button class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2 btn-press shadow-lg shadow-purple-500/25">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              Notify Me When Available
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -828,6 +1002,46 @@ tailwind.config = {
         </div>
         <div id="testingChecklist" class="space-y-2"></div>
       </div>
+
+      <!-- Developer Info Footer -->
+      <div class="mt-6 bg-gradient-to-br from-dark-100 to-dark-200 rounded-xl border border-dark-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
+              <i data-lucide="code-2" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-white">Built by 777Life Team</h3>
+              <p class="text-sm text-dark-500">Crafted with passion for productivity</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-brand-400 font-mono">v1.0.0</div>
+            <div class="text-xs text-dark-500">2026</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t border-dark-300">
+          <div class="flex items-center gap-4 text-xs text-dark-500">
+            <span class="flex items-center gap-1">
+              <i data-lucide="heart" class="w-3 h-3 text-red-500"></i>
+              Made with care
+            </span>
+            <span>•</span>
+            <span>777Life © 2026</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="#" class="p-2 text-dark-500 hover:text-brand-400 transition" title="GitHub">
+              <i data-lucide="github" class="w-4 h-4"></i>
+            </a>
+            <a href="#" class="p-2 text-dark-500 hover:text-brand-400 transition" title="Twitter">
+              <i data-lucide="twitter" class="w-4 h-4"></i>
+            </a>
+            <a href="#" class="p-2 text-dark-500 hover:text-brand-400 transition" title="Website">
+              <i data-lucide="globe" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -860,9 +1074,26 @@ tailwind.config = {
   <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
     <h2 class="text-xl font-bold text-white mb-4">Add New Goal</h2>
     <div class="space-y-4">
-      <input type="text" id="goalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Goal title">
-      <textarea id="goalDesc" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-24 resize-none text-white placeholder-dark-500" placeholder="Description"></textarea>
-      <input type="date" id="goalDeadline" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+      <!-- Quick Goal Suggestions -->
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Quick Select</label>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="selectGoalSuggestion('Build Muscle & Gain Weight', 'Increase muscle mass through consistent training and nutrition.', 90)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">💪 Build Muscle</button>
+          <button onclick="selectGoalSuggestion('Lose Weight & Get Fit', 'Achieve healthy weight through diet and exercise.', 90)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🔥 Lose Weight</button>
+          <button onclick="selectGoalSuggestion('Run a 5K', 'Train to complete a 5 kilometer run.', 60)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🏃 Run 5K</button>
+          <button onclick="selectGoalSuggestion('Meditate Daily', 'Build a consistent meditation practice.', 30)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🧘 Meditate</button>
+          <button onclick="selectGoalSuggestion('Read 12 Books', 'Read one book per month.', 365)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📖 Read 12 Books</button>
+          <button onclick="selectGoalSuggestion('Learn a New Skill', 'Dedicate time daily to master a new skill.', 90)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🎯 New Skill</button>
+          <button onclick="selectGoalSuggestion('Save $5000', 'Build an emergency fund through consistent saving.', 180)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">💰 Save Money</button>
+          <button onclick="selectGoalSuggestion('Improve Sleep Schedule', 'Maintain consistent 8-hour sleep daily.', 30)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">😴 Better Sleep</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Or Create Custom Goal</label>
+        <input type="text" id="goalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Goal title">
+        <textarea id="goalDesc" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-20 resize-none text-white placeholder-dark-500 mt-2" placeholder="Description"></textarea>
+        <input type="date" id="goalDeadline" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white mt-2">
+      </div>
       <div class="flex gap-3">
         <button onclick="closeGoalModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
         <button onclick="addGoal()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
@@ -876,17 +1107,34 @@ tailwind.config = {
   <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
     <h2 class="text-xl font-bold text-white mb-4">Add New Task</h2>
     <div class="space-y-4">
-      <input type="text" id="taskTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Task title">
-      <select id="taskPriority" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
-        <option value="low">Low Priority</option>
-        <option value="medium">Medium Priority</option>
-        <option value="high">High Priority</option>
-      </select>
-      <select id="taskRecurrence" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
-        <option value="none">No Repeat</option>
-        <option value="daily">Repeat Daily</option>
-        <option value="weekly">Repeat Weekly</option>
-      </select>
+      <!-- Quick Task Suggestions -->
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Quick Select</label>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="selectTaskSuggestion('Morning Workout', 'medium', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🏋️ Morning Workout</button>
+          <button onclick="selectTaskSuggestion('Review Daily Goals', 'high', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📋 Review Goals</button>
+          <button onclick="selectTaskSuggestion('Meal Prep', 'medium', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🍱 Meal Prep</button>
+          <button onclick="selectTaskSuggestion('Evening Walk', 'low', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🚶 Evening Walk</button>
+          <button onclick="selectTaskSuggestion('Read 30 Minutes', 'medium', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📖 Read 30min</button>
+          <button onclick="selectTaskSuggestion('Plan Tomorrow', 'high', 'daily')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📅 Plan Tomorrow</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Or Create Custom Task</label>
+        <input type="text" id="taskTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Task title">
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <select id="taskPriority" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+            <option value="low">Low Priority</option>
+            <option value="medium" selected>Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
+          <select id="taskRecurrence" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white">
+            <option value="none" selected>No Repeat</option>
+            <option value="daily">Repeat Daily</option>
+            <option value="weekly">Repeat Weekly</option>
+          </select>
+        </div>
+      </div>
       <div class="flex gap-3">
         <button onclick="closeTaskModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
         <button onclick="addTask()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
@@ -900,9 +1148,24 @@ tailwind.config = {
   <div class="bg-dark-100 rounded-2xl max-w-md w-full p-6 fade-in border border-dark-200">
     <h2 class="text-xl font-bold text-white mb-4">Add New Skill</h2>
     <div class="space-y-4">
-      <input type="text" id="skillName" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Skill name">
-      <input type="range" id="skillLevel" min="0" max="100" value="0" class="w-full" oninput="document.getElementById('skillLevelVal').textContent = this.value + '%'">
-      <div class="text-center text-sm text-dark-500">Current Level: <span id="skillLevelVal">0%</span></div>
+      <!-- Quick Skill Suggestions -->
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Quick Select</label>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="selectSkillSuggestion('Programming', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">💻 Programming</button>
+          <button onclick="selectSkillSuggestion('Public Speaking', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🎤 Public Speaking</button>
+          <button onclick="selectSkillSuggestion('Writing', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">✍️ Writing</button>
+          <button onclick="selectSkillSuggestion('Design', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🎨 Design</button>
+          <button onclick="selectSkillSuggestion('Data Analysis', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📊 Data Analysis</button>
+          <button onclick="selectSkillSuggestion('Photography', 10)" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📷 Photography</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Or Create Custom Skill</label>
+        <input type="text" id="skillName" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Skill name">
+        <input type="range" id="skillLevel" min="0" max="100" value="0" class="w-full mt-3" oninput="document.getElementById('skillLevelVal').textContent = this.value + '%'">
+        <div class="text-center text-sm text-dark-500">Current Level: <span id="skillLevelVal">0%</span></div>
+      </div>
       <div class="flex gap-3">
         <button onclick="closeSkillModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
         <button onclick="addSkill()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Add</button>
@@ -916,8 +1179,23 @@ tailwind.config = {
   <div class="bg-dark-100 rounded-2xl max-w-lg w-full p-6 fade-in border border-dark-200">
     <h2 class="text-xl font-bold text-white mb-4">New Journal Entry</h2>
     <div class="space-y-4">
-      <input type="text" id="journalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Entry title">
-      <textarea id="journalContent" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-48 resize-none text-white placeholder-dark-500" placeholder="What's on your mind?"></textarea>
+      <!-- Quick Journal Suggestions -->
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Quick Select</label>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button onclick="selectJournalSuggestion('Daily Reflection', 'What went well today? What could be improved?')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📝 Daily Reflection</button>
+          <button onclick="selectJournalSuggestion('Gratitude Log', 'List 3 things you are grateful for today.')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🙏 Gratitude Log</button>
+          <button onclick="selectJournalSuggestion('Goal Progress', 'Update on your current goals and progress.')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🎯 Goal Progress</button>
+          <button onclick="selectJournalSuggestion('Mindfulness Notes', 'Describe your current mental state and any insights.')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">🧘 Mindfulness</button>
+          <button onclick="selectJournalSuggestion('Learning Summary', 'What did you learn today? How will you apply it?')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">📚 Learning</button>
+          <button onclick="selectJournalSuggestion('Challenges & Solutions', 'Describe any challenges faced and how you overcame them.')" class="p-2 bg-dark-200 hover:bg-dark-300 border border-dark-300 rounded-lg text-xs text-white transition text-left">💡 Solutions</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-white mb-2">Or Create Custom Entry</label>
+        <input type="text" id="journalTitle" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder-dark-500" placeholder="Entry title">
+        <textarea id="journalContent" class="w-full px-4 py-3 bg-dark-200 border border-dark-300 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 h-48 resize-none text-white placeholder-dark-500 mt-2" placeholder="What's on your mind?"></textarea>
+      </div>
       <div class="flex gap-3">
         <button onclick="closeJournalModal()" class="flex-1 bg-dark-300 hover:bg-dark-400 text-white py-3 rounded-xl transition">Cancel</button>
         <button onclick="addJournal()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl transition">Save</button>
@@ -1657,6 +1935,13 @@ function renderGoals() {
 function openGoalModal() { document.getElementById('goalModal').classList.remove('hidden'); }
 function closeGoalModal() { document.getElementById('goalModal').classList.add('hidden'); }
 
+function selectGoalSuggestion(title, description, days) {
+  document.getElementById('goalTitle').value = title;
+  document.getElementById('goalDesc').value = description;
+  const deadline = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  document.getElementById('goalDeadline').value = deadline.toISOString().split('T')[0];
+}
+
 function addGoal() {
   const title = document.getElementById('goalTitle').value;
   if (!title) return;
@@ -1753,6 +2038,12 @@ function filterTasks(filter) {
 
 function openTaskModal() { document.getElementById('taskModal').classList.remove('hidden'); }
 function closeTaskModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+function selectTaskSuggestion(title, priority, recurrence) {
+  document.getElementById('taskTitle').value = title;
+  document.getElementById('taskPriority').value = priority;
+  document.getElementById('taskRecurrence').value = recurrence;
+}
 
 function addTask() {
   const title = document.getElementById('taskTitle').value;
@@ -1891,6 +2182,17 @@ function renderJournal() {
 
 function openJournalModal() { document.getElementById('journalModal').classList.remove('hidden'); }
 function closeJournalModal() { document.getElementById('journalModal').classList.add('hidden'); }
+
+function selectJournalSuggestion(title, content) {
+  document.getElementById('journalTitle').value = title;
+  document.getElementById('journalContent').value = content;
+}
+
+function selectSkillSuggestion(name, level) {
+  document.getElementById('skillName').value = name;
+  document.getElementById('skillLevel').value = level;
+  document.getElementById('skillLevelVal').textContent = level + '%';
+}
 
 function addJournal() {
   const title = document.getElementById('journalTitle').value;
